@@ -88,6 +88,7 @@ class mT5Classifier(ClassificationModel):
         translated_data: List[str],
         **training_args
     ):
+        # https://github.com/UKPLab/sentence-transformers/blob/master/examples/training/other/training_multi-task.py
         assert len(train_data) == len(train_labels) == len(translated_data)
         assert hasattr(self, "evaluator"), "Call build_evaluator first to build an evaluator " \
                                            "for evaluation during training"
