@@ -1,18 +1,115 @@
+import os
+import csv
+import json
 import logging
 import math
-from typing import List, Dict, Tuple, Callable, Iterable
+from typing import List, Dict, Tuple, Callable, Iterable, Optional, Any
 
 import torch
 import torch.nn as nn
+from hyperopt.utils import json_call
 from sentence_transformers import SentenceTransformer, models, InputExample, losses
 from sentence_transformers.evaluation import LabelAccuracyEvaluator, SentenceEvaluator
+from sentence_transformers.util import batch_to_device
 from torch import Tensor
 from torch.utils.data import DataLoader
+from transformers import MT5EncoderModel, AutoConfig
 
 from models.model_base import ClassificationModel
 
 
 logger = logging.getLogger(__name__)
+
+
+class ModifiedLabelAccuracyEvaluator(SentenceEvaluator):
+    """
+    Evaluate a model based on its accuracy on a labeled dataset
+
+    This requires a model with LossFunction.SOFTMAX
+
+    The results are written in a CSV. If a CSV already exists, then values are appended.
+    """
+
+    def __init__(
+        self,
+        dataloader: DataLoader,
+        name: str = "",
+        softmax_model = None,
+        write_csv: bool = True,
+        compute_metrics: Optional[Callable]=None
+    ):
+        """
+        Constructs an evaluator for the given dataset
+
+        :param dataloader:
+            the data for the evaluation
+        """
+        self.dataloader = dataloader
+        self.name = name
+        self.softmax_model = softmax_model
+
+        if name:
+            name = "_"+name
+
+        self.write_csv = write_csv
+        self.csv_file = "accuracy_evaluation"+name+"_results.csv"
+        self.csv_headers = ["epoch", "steps", "accuracy"]
+        self.compute_metrics = compute_metrics
+
+    def __call__(self, model, output_path: str = None, epoch: int = -1, steps: int = -1) -> float:
+        model.eval()
+        total = 0
+        correct = 0
+        pred_labels = torch.tensor([])
+
+        if epoch != -1:
+            if steps == -1:
+                out_txt = " after epoch {}:".format(epoch)
+            else:
+                out_txt = " in epoch {} after {} steps:".format(epoch, steps)
+        else:
+            out_txt = ":"
+
+        logger.info("Evaluation on the "+self.name+" dataset"+out_txt)
+        self.dataloader.collate_fn = model.smart_batching_collate
+        for step, batch in enumerate(self.dataloader):
+            features, label_ids = batch
+            for idx in range(len(features)):
+                features[idx] = batch_to_device(features[idx], model.device)
+            label_ids = label_ids.to(model.device)
+            with torch.no_grad():
+                _, prediction = self.softmax_model(features, labels=None)
+
+            total += prediction.size(0)
+            pred_labels_batch = torch.argmax(prediction, dim=1)
+            correct += pred_labels_batch.eq(label_ids).sum().item()
+            pred_labels = torch.cat([pred_labels, pred_labels_batch.cpu()])
+        accuracy = correct/total
+
+        # logger.info("Accuracy: {:.4f} ({}/{})\n".format(accuracy, correct, total))
+        print("Accuracy: {:.4f} ({}/{})\n".format(accuracy, correct, total))
+        if self.compute_metrics is not None:
+            true_labels = [d.label for d in self.dataloader.dataset]
+            metrics = self.compute_metrics(true_labels, pred_labels.numpy())
+        else:
+            metrics = None
+
+        if output_path is not None and self.write_csv:
+            csv_path = os.path.join(output_path, self.csv_file)
+            if not os.path.isfile(csv_path):
+                with open(csv_path, newline='', mode="w", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(self.csv_headers)
+                    writer.writerow([epoch, steps, accuracy])
+            else:
+                with open(csv_path, newline='', mode="a", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([epoch, steps, accuracy])
+            if metrics is not None:
+                with open(f"{os.path.dirname(csv_path)}/classification_report_{epoch}_{step}.json", "w") as f:
+                    json.dump(metrics, f)
+
+        return accuracy
 
 
 class SupervisedLoss(nn.Module):
@@ -41,6 +138,8 @@ class SupervisedLoss(nn.Module):
         self.model = model
         self.num_labels = num_labels
         self.classifier = nn.Linear(sentence_embedding_dimension, num_labels)
+        # modified forward so it works with evaluator call
+        # self.classifier = LinearClassifier(sentence_embedding_dimension, num_labels)
         self.loss_fct = loss_fct
 
     def forward(self, sentence_features: Iterable[Dict[str, Tensor]], labels: Tensor):
@@ -59,13 +158,20 @@ class mT5Classifier(ClassificationModel):
     def __init__(
         self,
         supervised_ny: bool=True,
-        supervised_en: bool=True,
-        contrastive: bool=True,
+        supervised_en: bool=False,
+        contrastive: bool=False,
         save_path: str="dump/mt5_classifier",
+        training_args: Optional[Dict[str, Any]]=None,
         verbose: bool=False
     ):
         super(mT5Classifier, self).__init__(verbose)
-        base_model = models.Transformer("google/mt5-small")
+        model_name = "google/mt5-small"
+        base_model = models.Transformer(model_name)
+        # sentence bert repo does not current support mT5 yet (only T5 ironically)
+        MT5EncoderModel._keys_to_ignore_on_load_unexpected = ["decoder.*"]
+        mT5_config = AutoConfig.from_pretrained(model_name)
+        base_model.auto_model = MT5EncoderModel.from_pretrained("google/mt5-small", config=mT5_config)
+
         pooling_model = models.Pooling(base_model.get_word_embedding_dimension())
         dense_model = models.Dense(in_features=pooling_model.get_sentence_embedding_dimension(), out_features=256,
                                    activation_function=nn.Tanh())
@@ -74,37 +180,45 @@ class mT5Classifier(ClassificationModel):
         self.train_loss_supervised = SupervisedLoss(model=self.model,
                                                     sentence_embedding_dimension=self.model.get_sentence_embedding_dimension(),
                                                     num_labels=len(self.classes))
-        self.classifier = self.train_loss_supervised.classifier
+        # self.classifier = self.train_loss_supervised.classifier
 
         self.supervised_ny = supervised_ny
         self.supervised_en = supervised_en
         self.contrastive = contrastive
         self.save_path = save_path
 
+        default_training_args = {"batch_size": 16, "epochs": 4, "evaluation_steps": 1000}
+        if training_args is None:
+            training_args = default_training_args
+        else:
+            for k, v in default_training_args.items():
+                if k not in training_args:
+                    training_args[k] = default_training_args[k]
+        self.training_args = training_args
+
     def train_supervised_with_translation(
         self,
         train_data: List[str],
         train_labels: List[str],
-        translated_data: List[str],
-        **training_args
+        translated_data: Optional[List[str]],
     ):
         # https://github.com/UKPLab/sentence-transformers/blob/master/examples/training/other/training_multi-task.py
-        assert len(train_data) == len(train_labels) == len(translated_data)
+        assert len(train_data) == len(train_labels)
         assert hasattr(self, "evaluator"), "Call build_evaluator first to build an evaluator " \
                                            "for evaluation during training"
-
+        assert translated_data is not None or (not self.supervised_en and not self.contrastive)
         supervised_train_samples = []
         if self.supervised_ny:
             for i in range(len(train_data)):
                 supervised_train_samples.append(
-                    InputExample(texts=[train_data[i]], label=self.class2idx[train_data[i]])
+                    InputExample(texts=[train_data[i]], label=self.class2idx[train_labels[i]])
                 )
         if self.supervised_en:
             for i in range(len(train_data)):
                 supervised_train_samples.append(
-                    InputExample(texts=[translated_data[i]], label=self.class2idx[train_data[i]])
+                    InputExample(texts=[translated_data[i]], label=self.class2idx[train_labels[i]])
                 )
-        train_dataloader_supervised = DataLoader(supervised_train_samples, shuffle=True, batch_size=training_args["batch_size"])
+        train_dataloader_supervised = DataLoader(supervised_train_samples, shuffle=True, batch_size=self.training_args["batch_size"])
 
         if self.contrastive:
             contrastive_train_samples = []
@@ -112,10 +226,10 @@ class mT5Classifier(ClassificationModel):
                 contrastive_train_samples.append(
                     InputExample(texts=[train_data[i], translated_data[i]]),
                 )
-            contrastive_dataloader = DataLoader(contrastive_train_samples, shuffle=True, batch_size=16)
+            contrastive_dataloader = DataLoader(contrastive_train_samples, shuffle=True, batch_size=self.training_args["batch_size"])
             train_loss_contrastive = losses.MultipleNegativesSymmetricRankingLoss(model=self.model)
 
-        num_epochs = 4
+        num_epochs = self.training_args["epochs"]
 
         warmup_steps = math.ceil(len(train_dataloader_supervised) * num_epochs * 0.1)  # 10% of train data for warm-up
         logging.info("Warmup-steps: {}".format(warmup_steps))
@@ -134,16 +248,19 @@ class mT5Classifier(ClassificationModel):
             train_objectives=train_objectives,
             evaluator=self.evaluator,
             epochs=num_epochs,
-            evaluation_steps=1000,
+            evaluation_steps=self.training_args["evaluation_steps"],
             warmup_steps=warmup_steps,
-            output_path=self.save_path
+            output_path=self.save_path,
+            use_amp=False,  # mT5 model with amp training results in nan https://discuss.huggingface.co/t/t5-fp16-issue-is-fixed/3139
+            optimizer_params={'lr': 3e-6}
        )
 
     def build_evaluator(self, test_data: List[str], test_labels: List[str]):
         test_data_samples = []
         for i in range(len(test_data)):
-            test_data_samples.append(InputExample(texts=[test_data[i]], label=test_labels[i]))
-        evaluator = LabelAccuracyEvaluator(self.model, "news_classification", self.classifier)
+            test_data_samples.append(InputExample(texts=[test_data[i]], label=self.class2idx[test_labels[i]]))
+        eval_dataloader = DataLoader(test_data_samples, shuffle=True, batch_size=self.training_args["batch_size"])
+        evaluator = ModifiedLabelAccuracyEvaluator(eval_dataloader, "news_classification", self.train_loss_supervised, compute_metrics=super().get_metrics)
         self.evaluator = evaluator
 
     def evaluate(self, test_data: List[str], test_labels: List[str]) -> Dict:
