@@ -376,10 +376,10 @@ class mT5Classifier(ClassificationModel):
         evaluator = ModifiedLabelAccuracyEvaluator(eval_dataloader, "news_classification", self.train_loss_supervised, compute_metrics=super().get_metrics)
         self.evaluator = evaluator
 
-    def build_pretrain_evaluator(self, test_data: List[str], test_labels: List[str]):
+    def build_pretrain_evaluator(self, test_data: List[str], translated_data: List[str]):
         test_data_samples = []
         for i in range(len(test_data)):
-            test_data_samples.append(InputExample(texts=[test_data[i]], label=self.class2idx[test_labels[i]]))
+            test_data_samples.append(InputExample(texts=[test_data[i], translated_data[i]]))
         # eval_dataloader = DataLoader(test_data_samples, shuffle=True, batch_size=self.training_args["batch_size"])
         evaluator = ContrastiveLossEvaluator.from_input_examples(test_data_samples,
                                                                  batch_size=self.training_args["batch_size"],

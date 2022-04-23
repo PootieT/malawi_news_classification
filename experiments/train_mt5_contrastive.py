@@ -17,7 +17,7 @@ def split_sentences(text: str) -> List[str]:
 def expand_sentences(
     texts: List[str],
     translated_texts: List[str],
-    labels: List[str],
+    labels: Optional[List[str]]=None,
     sents_per_split: int=3
 ):
     new_texts = []
@@ -33,9 +33,13 @@ def expand_sentences(
                 round((sent_idx+3) / len(text_split) * len(translated_text_split))
             new_texts.append(" ".join(text_split[sent_idx: sent_idx+sents_per_split]))
             new_translated_texts.append(" ".join(translated_text_split[prev_translated_idx: translated_idx]))
-            new_labels.append(labels[i])
+            if labels is not None:
+                new_labels.append(labels[i])
             prev_translated_idx = translated_idx
-    return new_texts, new_translated_texts, new_labels
+    if labels is None:
+        return new_texts, new_translated_texts
+    else:
+        return new_texts, new_translated_texts, new_labels
 
 
 def train_and_evaluate(data_path: str, translated_data_path: str):
@@ -94,11 +98,11 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
 
     assert len(train_t_df) == len(train_df)
 
-    X_train, X_test, y_train, y_test, X_t_train, X_t_test = train_test_split(
-        train_df.Text, train_df.Label, train_t_df.Text, test_size=0.3, random_state=42, stratify=train_df.Label)
+    X_train, X_test, X_t_train, X_t_test = train_test_split(
+        train_df.text, train_t_df.text, test_size=0.3, random_state=42)
 
-    X_train, X_t_train, y_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), y_train.tolist())
-    X_test, X_t_testn, y_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), y_test.tolist())
+    X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist())
+    X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist())
 
     # test_df = pd.read_csv("../data/test.csv")
 
@@ -112,9 +116,9 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
         training_args=training_args,
         verbose=True
     )
-    model.build_pretrain_evaluator(X_test, y_test)
-    model.train_supervised_with_translation(X_train, y_train, X_t_train)
-    metric = model.evaluate(X_test, y_test)
+    model.build_pretrain_evaluator(X_test, X_t_test)
+    model.pretrain(X_train, X_t_train)
+    metric = model.evaluate(X_test, X_t_test)
     metrics.append(metric)
 
     eval_df = pd.DataFrame(metrics)
