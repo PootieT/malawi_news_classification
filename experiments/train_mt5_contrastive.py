@@ -83,7 +83,7 @@ def load_jsonl_to_pd(path: str):
 def pretrain_mt5(data_path: str, translated_data_path: str):
     if ".jsonl" in data_path:
         train_df = load_jsonl_to_pd(data_path)
-        train_t_df = pd.read_table("realnews_ny_small.jsonl00", names=["text"])
+        train_t_df = pd.read_table(translated_data_path, names=["text"])
     else:
         train_df = pd.read_csv(data_path)
         train_t_df = pd.read_csv(translated_data_path)
