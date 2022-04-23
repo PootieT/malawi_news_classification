@@ -15,7 +15,7 @@ def translate(in_path: str, out_path: str):
 
     model = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-ny")
 
-    pipe = TranslationPipeline(model, tokenizer=tokenizer, device=-1, batch_size=32)
+    pipe = TranslationPipeline(model, tokenizer=tokenizer, device=0, batch_size=32)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     kwargs = {'truncation': True, 'max_length': 5000, 'return_text': True, "clean_up_tokenization_spaces": True}
