@@ -83,10 +83,15 @@ def load_jsonl_to_pd(path: str):
 def pretrain_mt5(data_path: str, translated_data_path: str):
     if ".jsonl" in data_path:
         train_df = load_jsonl_to_pd(data_path)
-        train_t_df = load_jsonl_to_pd(translated_data_path)
+        train_t_df = pd.read_table("realnews_ny_small.jsonl00", names=["text"])
     else:
         train_df = pd.read_csv(data_path)
         train_t_df = pd.read_csv(translated_data_path)
+    if len(train_df) > len(train_t_df):
+        train_df = train_df[: len(train_t_df)]
+    elif len(train_t_df) > len(train_df):
+        train_t_df = train_t_df[: len(train_df)]
+
     assert len(train_t_df) == len(train_df)
 
     X_train, X_test, y_train, y_test, X_t_train, X_t_test = train_test_split(
