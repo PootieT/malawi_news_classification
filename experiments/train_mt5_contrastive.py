@@ -1,5 +1,8 @@
 import re
 from typing import Optional, List
+
+import json
+import datasets
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -64,6 +67,49 @@ def train_and_evaluate(data_path: str, translated_data_path: str):
     metric["supervised_ny"] = True
     metric["supervised_en"] = False
     metric["contrastive"] = False
+    metrics.append(metric)
+
+    eval_df = pd.DataFrame(metrics)
+    return eval_df
+
+
+def load_jsonl_to_pd(path: str):
+    dataset = datasets.load_dataset('text', data_files={'train': [path]})["train"]
+    dataset = dataset.map(lambda example: {"content": json.loads(example["text"])["text"]}, remove_columns=["text"])
+    dataset = dataset.rename_column("content", "text")
+    return pd.DataFrame(dataset["text"], columns=["text"])
+
+
+def pretrain_mt5(data_path: str, translated_data_path: str):
+    if ".jsonl" in data_path:
+        train_df = load_jsonl_to_pd(data_path)
+        train_t_df = load_jsonl_to_pd(translated_data_path)
+    else:
+        train_df = pd.read_csv(data_path)
+        train_t_df = pd.read_csv(translated_data_path)
+    assert len(train_t_df) == len(train_df)
+
+    X_train, X_test, y_train, y_test, X_t_train, X_t_test = train_test_split(
+        train_df.Text, train_df.Label, train_t_df.Text, test_size=0.3, random_state=42, stratify=train_df.Label)
+
+    X_train, X_t_train, y_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), y_train.tolist())
+    X_test, X_t_testn, y_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), y_test.tolist())
+
+    # test_df = pd.read_csv("../data/test.csv")
+
+    metrics = []
+    training_args = {"batch_size": 8, "epochs": 2, "evaluation_steps": 200}
+    model = mT5Classifier(
+        supervised_ny=True,
+        supervised_en=True,
+        contrastive=True,
+        save_path="dump/mt5_sup_chi",
+        training_args=training_args,
+        verbose=True
+    )
+    model.build_pretrain_evaluator(X_test, y_test)
+    model.train_supervised_with_translation(X_train, y_train, X_t_train)
+    metric = model.evaluate(X_test, y_test)
     metrics.append(metric)
 
     eval_df = pd.DataFrame(metrics)

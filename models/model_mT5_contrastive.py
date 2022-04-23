@@ -5,12 +5,13 @@ import logging
 import math
 from typing import List, Dict, Tuple, Callable, Iterable, Optional, Any
 
+import numpy as np
 import torch
 import torch.nn as nn
-from hyperopt.utils import json_call
 from sentence_transformers import SentenceTransformer, models, InputExample, losses
-from sentence_transformers.evaluation import LabelAccuracyEvaluator, SentenceEvaluator
+from sentence_transformers.evaluation import LabelAccuracyEvaluator, SentenceEvaluator, SimilarityFunction
 from sentence_transformers.util import batch_to_device
+from sklearn.metrics.pairwise import paired_cosine_distances
 from torch import Tensor
 from torch.utils.data import DataLoader
 from transformers import MT5EncoderModel, AutoConfig
@@ -112,6 +113,88 @@ class ModifiedLabelAccuracyEvaluator(SentenceEvaluator):
         return accuracy
 
 
+class ContrastiveLossEvaluator(SentenceEvaluator):
+    """
+    Evaluate a model based on its softmax on a labeled dataset
+    The results are written in a CSV. If a CSV already exists, then values are appended.
+    """
+
+    def __init__(self, sentences1: List[str], sentences2: List[str], batch_size: int = 16,
+                 main_similarity: SimilarityFunction = None, name: str = '', show_progress_bar: bool = False,
+                 write_csv: bool = True):
+        """
+        Constructs an evaluator based for the dataset
+
+        The labels need to indicate the similarity between the sentences.
+
+        :param sentences1:  List with the first sentence in a pair
+        :param sentences2: List with the second sentence in a pair
+        :param write_csv: Write results to a CSV file
+        """
+        self.sentences1 = sentences1
+        self.sentences2 = sentences2
+        self.write_csv = write_csv
+
+        assert len(self.sentences1) == len(self.sentences2)
+
+        self.main_similarity = main_similarity
+        self.name = name
+
+        self.batch_size = batch_size
+        if show_progress_bar is None:
+            show_progress_bar = (
+                        logger.getEffectiveLevel() == logging.INFO or logger.getEffectiveLevel() == logging.DEBUG)
+        self.show_progress_bar = show_progress_bar
+
+        self.csv_file = "similarity_evaluation" + ("_" + name if name else '') + "_results.csv"
+        self.csv_headers = ["epoch", "steps", "cosine_pearson", "cosine_spearman", "euclidean_pearson",
+                            "euclidean_spearman", "manhattan_pearson", "manhattan_spearman", "dot_pearson",
+                            "dot_spearman"]
+
+    @classmethod
+    def from_input_examples(cls, examples: List[InputExample], **kwargs):
+        sentences1 = []
+        sentences2 = []
+
+        for example in examples:
+            sentences1.append(example.texts[0])
+            sentences2.append(example.texts[1])
+        return cls(sentences1, sentences2, **kwargs)
+
+    def __call__(self, model, output_path: str = None, epoch: int = -1, steps: int = -1) -> float:
+        if epoch != -1:
+            if steps == -1:
+                out_txt = " after epoch {}:".format(epoch)
+            else:
+                out_txt = " in epoch {} after {} steps:".format(epoch, steps)
+        else:
+            out_txt = ":"
+
+        logger.info("EmbeddingSimilarityEvaluator: Evaluating the model on " + self.name + " dataset" + out_txt)
+
+        embeddings1 = model.encode(self.sentences1, batch_size=self.batch_size,
+                                   show_progress_bar=self.show_progress_bar, convert_to_numpy=True)
+        embeddings2 = model.encode(self.sentences2, batch_size=self.batch_size,
+                                   show_progress_bar=self.show_progress_bar, convert_to_numpy=True)
+
+        cosine_scores = 1 - (paired_cosine_distances(embeddings1, embeddings2))
+
+        logger.info("Cosine-Score :".format(
+            np.mean(cosine_scores)))
+
+        if output_path is not None and self.write_csv:
+            csv_path = os.path.join(output_path, self.csv_file)
+            output_file_exists = os.path.isfile(csv_path)
+            with open(csv_path, newline='', mode="a" if output_file_exists else 'w', encoding="utf-8") as f:
+                writer = csv.writer(f)
+                if not output_file_exists:
+                    writer.writerow(self.csv_headers)
+
+                writer.writerow([epoch, steps, cosine_scores])
+
+        return cosine_scores
+
+
 class SupervisedLoss(nn.Module):
     """
     Supervised loss for classification on single sentence
@@ -196,6 +279,36 @@ class mT5Classifier(ClassificationModel):
                     training_args[k] = default_training_args[k]
         self.training_args = training_args
 
+    def pretrain(self, data: List[str], translated_data: List[str]):
+        contrastive_train_samples = []
+        for i in range(len(data)):
+            contrastive_train_samples.append(
+                InputExample(texts=[data[i], translated_data[i]]),
+            )
+        contrastive_dataloader = DataLoader(contrastive_train_samples, shuffle=True,
+                                            batch_size=self.training_args["batch_size"])
+        train_loss_contrastive = losses.MultipleNegativesSymmetricRankingLoss(model=self.model)
+
+        num_epochs = self.training_args["epochs"]
+
+        warmup_steps = math.ceil(len(contrastive_dataloader) * num_epochs * 0.1)  # 10% of train data for warm-up
+        logging.info("Warmup-steps: {}".format(warmup_steps))
+
+        train_objectives = [(contrastive_dataloader, train_loss_contrastive)]
+
+        # Train the model
+        self.model.fit(
+            train_objectives=train_objectives,
+            evaluator=self.evaluator,
+            epochs=num_epochs,
+            evaluation_steps=self.training_args["evaluation_steps"],
+            warmup_steps=warmup_steps,
+            output_path=self.save_path,
+            use_amp=False,
+            # mT5 model with amp training results in nan https://discuss.huggingface.co/t/t5-fp16-issue-is-fixed/3139
+            optimizer_params={'lr': 3e-6}
+        )
+
     def train_supervised_with_translation(
         self,
         train_data: List[str],
@@ -262,6 +375,18 @@ class mT5Classifier(ClassificationModel):
         eval_dataloader = DataLoader(test_data_samples, shuffle=True, batch_size=self.training_args["batch_size"])
         evaluator = ModifiedLabelAccuracyEvaluator(eval_dataloader, "news_classification", self.train_loss_supervised, compute_metrics=super().get_metrics)
         self.evaluator = evaluator
+
+    def build_pretrain_evaluator(self, test_data: List[str], test_labels: List[str]):
+        test_data_samples = []
+        for i in range(len(test_data)):
+            test_data_samples.append(InputExample(texts=[test_data[i]], label=self.class2idx[test_labels[i]]))
+        # eval_dataloader = DataLoader(test_data_samples, shuffle=True, batch_size=self.training_args["batch_size"])
+        evaluator = ContrastiveLossEvaluator.from_input_examples(test_data_samples,
+                                                                 batch_size=self.training_args["batch_size"],
+                                                                 main_similarity=SimilarityFunction.COSINE,
+                                                                 name="eval_similarity")
+        self.evaluator = evaluator
+
 
     def evaluate(self, test_data: List[str], test_labels: List[str]) -> Dict:
         if not hasattr(self, "evaluator"):
