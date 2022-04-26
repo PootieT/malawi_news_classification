@@ -260,6 +260,7 @@ class mT5Classifier(ClassificationModel):
                                    activation_function=nn.Tanh())
 
         self.model = SentenceTransformer(modules=[base_model, pooling_model, dense_model])
+        self.model.max_seq_length = 512
         self.train_loss_supervised = SupervisedLoss(model=self.model,
                                                     sentence_embedding_dimension=self.model.get_sentence_embedding_dimension(),
                                                     num_labels=len(self.classes))
@@ -286,7 +287,7 @@ class mT5Classifier(ClassificationModel):
         :param max_len:
         :return:
         """
-        return [" ".join(s.split(" ")[:max_len]) for s in sents]
+        return [" ".join(s.split()[:max_len]) for s in sents]
 
     def pretrain(self, data: List[str], translated_data: List[str]):
         data = self.trim_long_sentences(data)

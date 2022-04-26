@@ -126,7 +126,6 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
     X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), method="s2s")
     X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), method="s2s")
 
-    X_train,
     # test_df = pd.read_csv("../data/test.csv")
 
     metrics = []
