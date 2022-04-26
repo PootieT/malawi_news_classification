@@ -3,6 +3,7 @@ from typing import Optional, List
 
 import json
 import datasets
+import pandas
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -10,15 +11,18 @@ from sklearn.model_selection import train_test_split
 
 from models.model_mT5_contrastive import mT5Classifier
 
+
 def split_sentences(text: str) -> List[str]:
-    return re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+    return [s for s in sentences if s]
 
 
 def expand_sentences(
     texts: List[str],
     translated_texts: List[str],
     labels: Optional[List[str]]=None,
-    sents_per_split: int=3
+    sents_per_split: int=3,
+    method: str="interpolate"
 ):
     new_texts = []
     new_translated_texts = []
@@ -26,16 +30,25 @@ def expand_sentences(
     for i in tqdm(range(len(texts))):
         text_split = split_sentences(texts[i])
         translated_text_split = split_sentences(translated_texts[i])
-        prev_translated_idx = 0
-        len_matched = len(text_split) == len(translated_text_split)
-        for sent_idx in range(0, len(text_split), sents_per_split):
-            translated_idx = sent_idx + sents_per_split if len_matched else \
-                round((sent_idx+3) / len(text_split) * len(translated_text_split))
-            new_texts.append(" ".join(text_split[sent_idx: sent_idx+sents_per_split]))
-            new_translated_texts.append(" ".join(translated_text_split[prev_translated_idx: translated_idx]))
-            if labels is not None:
-                new_labels.append(labels[i])
-            prev_translated_idx = translated_idx
+        if method == "interpolate":
+            prev_translated_idx = 0
+            len_matched = len(text_split) == len(translated_text_split)
+            for sent_idx in range(0, len(text_split), sents_per_split):
+                translated_idx = sent_idx + sents_per_split if len_matched else \
+                    round((sent_idx+3) / len(text_split) * len(translated_text_split))
+                new_texts.append(" ".join(text_split[sent_idx: sent_idx+sents_per_split]))
+                new_translated_texts.append(" ".join(translated_text_split[prev_translated_idx: translated_idx]))
+                if labels is not None:
+                    new_labels.append(labels[i])
+                prev_translated_idx = translated_idx
+        elif method == "s2s":
+            if len(text_split) > len(translated_text_split):
+                new_texts.append(" ".join(text_split[:len(translated_text_split)]))
+                new_translated_texts.append(" ".join(translated_text_split))
+            else:
+                new_translated_texts.append(" ".join(translated_text_split[:len(text_split)]))
+                new_texts.append(" ".join(text_split))
+
     if labels is None:
         return new_texts, new_translated_texts
     else:
@@ -84,10 +97,19 @@ def load_jsonl_to_pd(path: str):
     return pd.DataFrame(dataset["text"], columns=["text"])
 
 
+def read_txt_to_pandas(path: str):
+    # only this way do we preserve the way original translation newline
+    # was appended to keep the corpus parallel
+    with open(path, "r") as f:
+        lines = [s.strip() for s in f.readlines()]
+    return pd.DataFrame(lines, columns=["text"])
+
+
 def pretrain_mt5(data_path: str, translated_data_path: str):
     if ".jsonl" in data_path:
         train_df = load_jsonl_to_pd(data_path)
-        train_t_df = pd.read_table(translated_data_path, names=["text"])
+        train_t_df = read_txt_to_pandas(translated_data_path)
+        # train_t_df = pd.read_table(translated_data_path, names=["text"],sep="\n")
     else:
         train_df = pd.read_csv(data_path)
         train_t_df = pd.read_csv(translated_data_path)
@@ -99,15 +121,16 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
     assert len(train_t_df) == len(train_df)
 
     X_train, X_test, X_t_train, X_t_test = train_test_split(
-        train_df.text, train_t_df.text, test_size=0.3, random_state=42)
+        train_df.text, train_t_df.text, test_size=0.005, random_state=42)
 
-    X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist())
-    X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist())
+    X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), method="s2s")
+    X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), method="s2s")
 
+    X_train,
     # test_df = pd.read_csv("../data/test.csv")
 
     metrics = []
-    training_args = {"batch_size": 8, "epochs": 2, "evaluation_steps": 200}
+    training_args = {"batch_size": 4, "epochs": 2, "evaluation_steps": 200}
     model = mT5Classifier(
         supervised_ny=True,
         supervised_en=True,
@@ -126,6 +149,9 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
 
 
 if __name__ == "__main__":
-    chichewa_result = train_and_evaluate(data_path="../data/train.csv",
-                                         translated_data_path="../data/train_google_translated.csv")
+    pretrain_mt5("../data/english_news/realnews/realnews.jsonl00",
+                 "../data/english_news/realnews/realnews_ny.jsonl00")
+
+    # chichewa_result = train_and_evaluate(data_path="../data/train.csv",
+    #                                      translated_data_path="../data/train_google_translated.csv")
     pass

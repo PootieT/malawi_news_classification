@@ -157,6 +157,7 @@ class ContrastiveLossEvaluator(SentenceEvaluator):
         sentences2 = []
 
         for example in examples:
+            # a very rough optimistic truncation that prevents super eval sequences from jamming up GPU mem
             sentences1.append(example.texts[0])
             sentences2.append(example.texts[1])
         return cls(sentences1, sentences2, **kwargs)
@@ -177,10 +178,9 @@ class ContrastiveLossEvaluator(SentenceEvaluator):
         embeddings2 = model.encode(self.sentences2, batch_size=self.batch_size,
                                    show_progress_bar=self.show_progress_bar, convert_to_numpy=True)
 
-        cosine_scores = 1 - (paired_cosine_distances(embeddings1, embeddings2))
+        cosine_scores = np.mean(1 - (paired_cosine_distances(embeddings1, embeddings2))).item()
 
-        logger.info("Cosine-Score :".format(
-            np.mean(cosine_scores)))
+        logger.info("Cosine-Score :".format(cosine_scores))
 
         if output_path is not None and self.write_csv:
             csv_path = os.path.join(output_path, self.csv_file)
@@ -279,7 +279,19 @@ class mT5Classifier(ClassificationModel):
                     training_args[k] = default_training_args[k]
         self.training_args = training_args
 
+    def trim_long_sentences(self, sents: List[str], max_len: int=512):
+        """
+        optimistic way of trimming down long tail sentences
+        :param sents:
+        :param max_len:
+        :return:
+        """
+        return [" ".join(s.split(" ")[:max_len]) for s in sents]
+
     def pretrain(self, data: List[str], translated_data: List[str]):
+        data = self.trim_long_sentences(data)
+        translated_data = self.trim_long_sentences(translated_data)
+
         contrastive_train_samples = []
         for i in range(len(data)):
             contrastive_train_samples.append(
@@ -378,6 +390,8 @@ class mT5Classifier(ClassificationModel):
 
     def build_pretrain_evaluator(self, test_data: List[str], translated_data: List[str]):
         test_data_samples = []
+        test_data = self.trim_long_sentences(test_data)
+        translated_data = self.trim_long_sentences(translated_data)
         for i in range(len(test_data)):
             test_data_samples.append(InputExample(texts=[test_data[i], translated_data[i]]))
         # eval_dataloader = DataLoader(test_data_samples, shuffle=True, batch_size=self.training_args["batch_size"])
@@ -386,7 +400,6 @@ class mT5Classifier(ClassificationModel):
                                                                  main_similarity=SimilarityFunction.COSINE,
                                                                  name="eval_similarity")
         self.evaluator = evaluator
-
 
     def evaluate(self, test_data: List[str], test_labels: List[str]) -> Dict:
         if not hasattr(self, "evaluator"):
