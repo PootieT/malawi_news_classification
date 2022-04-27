@@ -108,6 +108,9 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
         train_df = load_jsonl_to_pd(data_path)
         train_t_df = read_txt_to_pandas(translated_data_path)
         # train_t_df = pd.read_table(translated_data_path, names=["text"],sep="\n")
+    elif ".xlsx" in data_path:
+        train_df = pd.read_excel(data_path, header=None, names=["text"])
+        train_t_df = pd.read_excel(translated_data_path, header=None, names=["text"])
     else:
         train_df = pd.read_csv(data_path)
         train_t_df = pd.read_csv(translated_data_path)
@@ -121,8 +124,12 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
     X_train, X_test, X_t_train, X_t_test = train_test_split(
         train_df.text, train_t_df.text, test_size=0.005, random_state=42)
 
-    X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), method="s2s")
-    X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), method="s2s")
+    if ".jsonl" in data_path:
+        X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), method="s2s")
+        X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), method="s2s")
+    elif ".xlsx" in data_path:
+        X_train, X_t_train = expand_sentences(X_train.tolist(), X_t_train.tolist(), method="interpolate")
+        X_test, X_t_test = expand_sentences(X_test.tolist(), X_t_test.tolist(), method="interpolate")
 
     # test_df = pd.read_csv("../data/test.csv")
 
@@ -146,9 +153,11 @@ def pretrain_mt5(data_path: str, translated_data_path: str):
 
 
 if __name__ == "__main__":
-    pretrain_mt5("../data/english_news/realnews/realnews.jsonl00",
-                 "../data/english_news/realnews/realnews_ny.jsonl00")
+    # pretrain_mt5("../data/english_news/realnews/realnews.jsonl00",
+    #              "../data/english_news/realnews/realnews_ny.jsonl00")
 
+    pretrain_mt5("../data/english_news/realnews/realnews_69/0_45000_en.xlsx",
+                 "../data/english_news/realnews/realnews_69_ny/0_45000_ny.xlsx")
     # chichewa_result = train_and_evaluate(data_path="../data/train.csv",
     #                                      translated_data_path="../data/train_google_translated.csv")
     pass
