@@ -3,9 +3,7 @@ from typing import Optional, List
 
 import json
 import datasets
-import pandas
 from tqdm import tqdm
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
