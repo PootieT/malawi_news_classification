@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 
 from models.model_mT5_contrastive import mT5Classifier
 
+
 def split_sentences(text: str) -> List[str]:
     return re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
 

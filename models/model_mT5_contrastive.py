@@ -387,7 +387,6 @@ class mT5Classifier(ClassificationModel):
                                                                  name="eval_similarity")
         self.evaluator = evaluator
 
-
     def evaluate(self, test_data: List[str], test_labels: List[str]) -> Dict:
         if not hasattr(self, "evaluator"):
             self.build_evaluator(test_data, test_labels)
