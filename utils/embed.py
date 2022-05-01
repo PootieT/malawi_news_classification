@@ -46,17 +46,17 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
     else:
         raise NotImplementedError()
 
-    pbar = tqdm(total=len(dataset))
+    # pbar = tqdm(total=len(dataset))
     # embeddings = np.zeros([len(dataset), model.config.hidden_size if not finetuned else 256])
     # for i, out in enumerate(pipe(KeyDataset(dataset, "text"), **kwargs)):
         # embeddings[i] = np.array(out[0][:512]).mean(1)
         # pbar.update(1)
-    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cuda")
+    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cpu")
     np.save(out_path, embeddings)
 
 
 if __name__ == "__main__":
-    embed_sentence("../data/train.csv", "./train_emb.npy")
+    embed_sentence("../data/train.csv", "./train_emb.npy", finetuned=True, batch_size=2)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
     #                     type=str,
