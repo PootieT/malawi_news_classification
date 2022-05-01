@@ -4,9 +4,11 @@ from typing import List, Dict, Optional, Tuple, Any
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
-
-from models.model_base import ClassificationModel
-
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from model_base import ClassificationModel
+from mlp import NeuralNetwork
+import xgboost as xgb
 
 class BaselineClassifier(ClassificationModel):
     """
@@ -22,18 +24,24 @@ class BaselineClassifier(ClassificationModel):
         verbose: bool=True
     ):
         super(BaselineClassifier, self).__init__(verbose)
+        
         assert vectorizer in ["tfidf", "cv"]
         self.vectorizer = {
             "tfidf": TfidfVectorizer,
             "cv": CountVectorizer
+            # add your vectorizer here
         }[vectorizer]
+        
         vectorizer_params = {} if vectorizer_params is None else vectorizer_params
         self.vectorizer = self.vectorizer(**vectorizer_params)
 
-        assert classifier in ["NB", "LR"]
+        assert classifier in ["NB", "LR", "RF", "XGB", "MLP"]
         self.classifier = {
             "NB": GaussianNB,
-            "LR": LogisticRegression
+            "LR": LogisticRegression, 
+            "MLP": NeuralNetwork,
+            "RF": RandomForestClassifier,
+            "XGB": xgb.XGBClassifier
         }[classifier]
         model_params = {} if model_params is None else model_params
         self.classifier = self.classifier(**model_params)
@@ -47,9 +55,16 @@ class BaselineClassifier(ClassificationModel):
         raise NotImplementedError
 
     def evaluate(self, test_data: List[str], test_labels: List[str]):
+        """
+        :param test_data: 
+        :param test_labels: 
+
+        
+        """
         features = self.vectorizer.transform(test_data).toarray()
         labels = [self.class2idx[c] for c in test_labels]
         pred = self.classifier.predict(features)
+
         metrics = super().get_metrics(labels, pred)
         return metrics
 
