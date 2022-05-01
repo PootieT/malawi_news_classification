@@ -19,11 +19,15 @@ def read_data(file):
         labels = file["arr_1"]
         return data, labels 
 
-    if extension == "csv":
+    elif extension == "csv":
         file = pd.read_csv(file)
         data = file.drop(["labels"], axis=1).to_numpy()
         labels = list(file["labels"])
         return data, labels
+    
+    elif extension == "pkl":
+        raise NotImplementedError
+
 
 def get_data(vectorizer):
 
@@ -32,6 +36,9 @@ def get_data(vectorizer):
     
     elif vectorizer == "CONTRASTIVE":
         return read_data(CONTASTIVE)
+
+    
+
 
 
 
