@@ -245,7 +245,8 @@ class mT5Classifier(ClassificationModel):
         contrastive: bool=False,
         save_path: str="dump/mt5_classifier",
         training_args: Optional[Dict[str, Any]]=None,
-        verbose: bool=False
+        verbose: bool=False,
+        load_model_path: Optional[str]=None
     ):
         super(mT5Classifier, self).__init__(verbose)
         model_name = "google/mt5-small"
@@ -254,6 +255,8 @@ class mT5Classifier(ClassificationModel):
         MT5EncoderModel._keys_to_ignore_on_load_unexpected = ["decoder.*"]
         mT5_config = AutoConfig.from_pretrained(model_name)
         base_model.auto_model = MT5EncoderModel.from_pretrained("google/mt5-small", config=mT5_config)
+        if load_model_path is not None:
+            base_model.auto_model.load_state_dict(load_model_path)
 
         pooling_model = models.Pooling(base_model.get_word_embedding_dimension())
         dense_model = models.Dense(in_features=pooling_model.get_sentence_embedding_dimension(), out_features=256,
