@@ -1,4 +1,4 @@
-import os.path
+import os
 from typing import Tuple, Optional
 
 import numpy as np
@@ -7,7 +7,7 @@ import pandas as pd
 from utils import expand_sentences
 
 
-def join_collected_data(path: str, sents_per_split: Optional[int]=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def join_scraped_data(path: str, sents_per_split: Optional[int]=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     assume data is in folder provided path, collected english news are
     named with their class label, and chichewa translations are named
@@ -49,4 +49,4 @@ def join_collected_data(path: str, sents_per_split: Optional[int]=None) -> Tuple
 
 
 if __name__ == "__main__":
-    join_collected_data("../data/web_scraped_data", sents_per_split=3)
+    join_scraped_data("../data/web_scraped_data", sents_per_split=3)
