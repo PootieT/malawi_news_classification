@@ -23,7 +23,6 @@ def train_and_evaluate(data_path: str):
             metrics = []
             combo = []
             for train_index, test_index in kf.split(train_df.Text):
-                print("TRAIN:", train_index, "TEST:", test_index)
                 X_train, X_test = train_df.iloc[train_index].Text, train_df.iloc[test_index].Text
                 y_train, y_test = train_df.iloc[train_index].Label, train_df.iloc[test_index].Label
                 combo.append(vec + "-" + m)
