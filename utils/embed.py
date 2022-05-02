@@ -58,9 +58,15 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
 
 
 if __name__ == "__main__":
-    embed_sentence("../data/train.csv", "../data/aligned_mt5_embeddings/embeddings_chichewa.npy",
+    # embed_sentence("../data/train.csv", "../data/aligned_mt5_embeddings/embeddings_chichewa.npy",
+    #                finetuned=True, batch_size=16)
+    # embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings/embeddings_english.npy",
+    #                finetuned=True, batch_size=16)
+    embed_sentence("../data/aligned_splits/split_texts.csv", "../data/aligned_splits/split_texts.npy",
                    finetuned=True, batch_size=16)
-    embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings/embeddings_english.npy",
+    embed_sentence("../data/aligned_splits/eng_split_texts.csv", "../data/aligned_splits/eng_split_texts.npy",
+                   finetuned=True, batch_size=16)
+    embed_sentence("../data/aligned_splits/eng_and_chich_split_texts.csv", "../data/aligned_splits/eng_and_chich_split_texts.npy",
                    finetuned=True, batch_size=16)
     # parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
