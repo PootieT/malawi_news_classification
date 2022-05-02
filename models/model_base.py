@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.metrics import classification_report
 
 
+
 class ClassificationModel:
     def __init__(self, verbose=True):
         self.verbose = verbose
