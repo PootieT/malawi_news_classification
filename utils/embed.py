@@ -20,7 +20,8 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
     # model = MT5EncoderModel.from_pretrained("google/mt5-small")
     # pipe = FeatureExtractionPipeline(model, tokenizer=tokenizer, device=-1, batch_size=batch_size)
     if finetuned:
-        model = mT5Classifier(load_model_path="dump/mt5_sup_chi")
+        model = mT5Classifier(load_model_path="../experiments/dump/mt5_sup_chi")
+        model = model.model
     else:
         model_name = "google/mt5-small"
         base_model = models.Transformer(model_name)
@@ -31,6 +32,7 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
         pooling_model = models.Pooling(base_model.get_word_embedding_dimension())
         model = SentenceTransformer(modules=[base_model, pooling_model])
 
+    model.eval()
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     kwargs = {'truncation': True, 'max_length': 512, 'return_text': True, "clean_up_tokenization_spaces": True}
@@ -51,12 +53,12 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
     # for i, out in enumerate(pipe(KeyDataset(dataset, "text"), **kwargs)):
         # embeddings[i] = np.array(out[0][:512]).mean(1)
         # pbar.update(1)
-    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cpu")
+    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cuda")
     np.save(out_path, embeddings)
 
 
 if __name__ == "__main__":
-    embed_sentence("../data/train.csv", "./train_emb.npy", finetuned=True, batch_size=2)
+    embed_sentence("../data/train.csv", "./train_emb.npy", finetuned=True, batch_size=16)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
     #                     type=str,
