@@ -8,18 +8,19 @@ from tqdm import tqdm
 sys.path.insert(0, '../models')
 from model_baselines import BaselineClassifier
 
+
 def train_and_evaluate(data_path: str):
     train_df = pd.read_csv(data_path)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        train_df.Text, train_df.Label, test_size=0.3, random_state=42, stratify=train_df.Label)
+    # X_train, X_test, y_train, y_test = train_test_split(
+    #     train_df.Text, train_df.Label, test_size=0.3, random_state=42, stratify=train_df.Label)
     
     language = "chichewa"
 
     test_df = pd.read_csv("../data/test.csv")
     kf = KFold(n_splits=3, random_state=42, shuffle=True)
 
-    pbar = tqdm(total = 10)
+    # pbar = tqdm(total = 10)
     for vec in ["tfidf", "cv"]:
         for m in ["MLP"]:
             metrics = []
@@ -37,7 +38,7 @@ def train_and_evaluate(data_path: str):
             eval_df = pd.DataFrame(metrics)
             eval_df.to_csv("../results/"+language+"_" + vec + "_" + m +".csv")
             eval_df.index = combo
-            pbar.update(1)
+            # pbar.update(1)
     return eval_df
 
 
