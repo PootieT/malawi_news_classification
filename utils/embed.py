@@ -58,8 +58,11 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
 
 
 if __name__ == "__main__":
-    embed_sentence("../data/train.csv", "./train_emb.npy", finetuned=True, batch_size=16)
-    parser = argparse.ArgumentParser(description='')
+    embed_sentence("../data/train.csv", "../data/aligned_mt5_embeddings/embeddings_chichewa.npy",
+                   finetuned=True, batch_size=16)
+    embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings/embeddings_english.npy",
+                   finetuned=True, batch_size=16)
+    # parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
     #                     type=str,
     #                     help='the path to translation source file (in English)')
