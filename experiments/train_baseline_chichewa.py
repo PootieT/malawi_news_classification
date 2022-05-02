@@ -17,7 +17,7 @@ def train_and_evaluate(data_path: str):
     metrics = []
     combo = []
     for vec in ["tfidf", "cv", "MT5"]:
-        for m in ["NB", "LR"]:
+        for m in ["NB", "LR", "XGB", "MLP", "RF"]:
             combo.append(vec + "-" + m)
             model = BaselineClassifier(vec, m, verbose=False)
             model.train_supervised(X_train, y_train)
