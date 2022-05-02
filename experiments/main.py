@@ -8,7 +8,3 @@ def results(df) -> None:
 
 if __name__ == "__main__":
     train_and_evaluate(data_path="../data/train.csv")
-    
-
-
-    

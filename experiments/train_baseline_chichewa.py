@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.model_selection import KFold
 import sys
+from tqdm import tqdm
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(0, '../models')
 from model_baselines import BaselineClassifier
@@ -16,10 +17,11 @@ def train_and_evaluate(data_path: str):
     language = "chichewa"
 
     test_df = pd.read_csv("../data/test.csv")
-    kf = KFold(n_splits=2, random_state=None, shuffle=False)
-    
-    for vec in ["tfidf", "cv", "MT5"]:
-        for m in ["NB", "LR", "XGB", "MLP", "RF"]:
+    kf = KFold(n_splits=3, random_state=42, shuffle=True)
+
+    pbar = tqdm(total = 10)
+    for vec in ["tfidf", "cv"]:
+        for m in ["MLP"]:
             metrics = []
             combo = []
             for train_index, test_index in kf.split(train_df.Text):
@@ -35,6 +37,7 @@ def train_and_evaluate(data_path: str):
             eval_df = pd.DataFrame(metrics)
             eval_df.to_csv("../results/"+language+"_" + vec + "_" + m +".csv")
             eval_df.index = combo
+            pbar.update(1)
     return eval_df
 
 
