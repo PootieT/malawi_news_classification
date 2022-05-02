@@ -8,9 +8,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from model_base import ClassificationModel
-from mlp import NeuralNetwork
+from mlp import NeuralNetwork, train
 import xgboost as xgb
 from read_data import get_data
+
 
 class BaselineClassifier(ClassificationModel):
     """
@@ -33,7 +34,7 @@ class BaselineClassifier(ClassificationModel):
         
         self.vectorizer_custom = False
 
-
+        # print("this happened")
         # Vectorizer part
 
         if vectorizer not in custom_embeddings:
@@ -57,11 +58,12 @@ class BaselineClassifier(ClassificationModel):
         self.classifier = {
             "NB": GaussianNB,
             "LR": LogisticRegression, 
-            # "MLP": NeuralNetwork,       # Need to add training loop
+            "MLP": NeuralNetwork,       # Need to add training loop
             "RF": RandomForestClassifier,
             # "XGB": xgb.XGBClassifier
         }[classifier]
 
+        self.classifier_type = classifier
         model_params = {} if model_params is None else model_params
         self.classifier = self.classifier(**model_params)
 
@@ -69,20 +71,22 @@ class BaselineClassifier(ClassificationModel):
 
     def train_supervised(self, train_data: List[str], train_labels: List[str]):
 
-        if ~self.vectoizer_custom:
-            features = self.vectorizer.fit_transform(train_data).toarray()
-            labels = [self.class2idx[c] for c in train_labels]
-            self.classifier.fit(features, labels)
-        else:
-            features, labels = self.train_data, self.train_labels 
-            labels = [self.class2idx[c] for c in train_labels]
-            self.classifier.fit(features, labels)
+        if self.classifier_type not in ["MLP", "XGB"]:
+            if ~self.vectorizer_custom:
+                features = self.vectorizer.fit_transform(train_data).toarray()
+                labels = [self.class2idx[c] for c in train_labels]
+                self.classifier.fit(features, labels)
+            else:
+                features, labels = self.train_data, self.train_labels 
+                labels = [self.class2idx[c] for c in train_labels]
+                self.classifier.fit(features, labels)
 
+        else:
+            raise NotImplementedError
 
 
     def train_unsupervised(self, train_data: List[str]):
-        raise NotImplementedError
-
+        raise NotImplementedError 
 
 
     def evaluate(self, test_data: List[str], test_labels: List[str]):
@@ -90,15 +94,20 @@ class BaselineClassifier(ClassificationModel):
         :param test_data: 
         :param test_labels:         
         """
-        if ~self.vectorizer_custom:
-            features = self.vectorizer.transform(test_data).toarray()
-            labels = [self.class2idx[c] for c in test_labels]
-            pred = self.classifier.predict(features)
-        else:
-            features, labels = self.test_data, self.test_labels 
-            labels = [self.class2idx[c] for c in labels]
-            pred = self.classifier.predict(features, labels)
+        if self.classifier_type not in ["MLP", "XGB"]:
+
+            if ~self.vectorizer_custom:
+                features = self.vectorizer.transform(test_data).toarray()
+                labels = [self.class2idx[c] for c in test_labels]
+                pred = self.classifier.predict(features)
+            else:
+                features, labels = self.test_data, self.test_labels 
+                labels = [self.class2idx[c] for c in labels]
+                pred = self.classifier.predict(features, labels)
             
-        metrics = super().get_metrics(labels, pred)
-        return metrics
+            metrics = super().get_metrics(labels, pred)
+            return metrics
+
+        else:
+            raise NotImplementedError
 
