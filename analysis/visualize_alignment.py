@@ -43,7 +43,9 @@ def visualize_alignment(emb_ny: np.array, emb_en: np.array, train_df: pd.DataFra
 if __name__ == "__main__":
     # emb_chichewa = np.load("../data/mt5_embeddings/embeddings_chichewa_512_final.npy")
     # emb_english = np.load("../data/mt5_embeddings/embeddings_english_512_final.npy")
-    emb_chichewa = np.load("../data/aligned_mt5_embeddings/embeddings_chichewa.npy")
-    emb_english = np.load("../data/aligned_mt5_embeddings/embeddings_english.npy")
+    # emb_chichewa = np.load("../data/aligned_mt5_embeddings/embeddings_chichewa.npy")
+    # emb_english = np.load("../data/aligned_mt5_embeddings/embeddings_english.npy")
+    emb_chichewa = np.load("../data/aligned_mt5_embeddings_no_dense/embeddings_chichewa.npy")
+    emb_english = np.load("../data/aligned_mt5_embeddings_no_dense/embeddings_english.npy")
     train_df = pd.read_csv("../data/train.csv")
     visualize_alignment(emb_chichewa, emb_english, train_df, title="mt5 embedding visualization")

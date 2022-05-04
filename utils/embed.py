@@ -15,12 +15,12 @@ from transformers.pipelines.pt_utils import KeyDataset
 from models.model_mT5_contrastive import mT5Classifier
 
 
-def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_size:int=32):
+def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, load_dense_layer: bool=True, batch_size:int=32):
     # tokenizer = AutoTokenizer.from_pretrained("google/mt5-small", model_max_length=512)
     # model = MT5EncoderModel.from_pretrained("google/mt5-small")
     # pipe = FeatureExtractionPipeline(model, tokenizer=tokenizer, device=-1, batch_size=batch_size)
     if finetuned:
-        model = mT5Classifier(load_model_path="../experiments/dump/mt5_sup_chi")
+        model = mT5Classifier(load_model_path="../experiments/dump/mt5_sup_chi", load_dense_layer=load_dense_layer)
         model = model.model
     else:
         model_name = "google/mt5-small"
@@ -53,21 +53,19 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
     # for i, out in enumerate(pipe(KeyDataset(dataset, "text"), **kwargs)):
         # embeddings[i] = np.array(out[0][:512]).mean(1)
         # pbar.update(1)
-    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cuda")
+    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cpu")
     np.save(out_path, embeddings)
 
 
 if __name__ == "__main__":
-    # embed_sentence("../data/train.csv", "../data/aligned_mt5_embeddings/embeddings_chichewa.npy",
-    #                finetuned=True, batch_size=16)
-    # embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings/embeddings_english.npy",
-    #                finetuned=True, batch_size=16)
-    embed_sentence("../data/aligned_splits/split_texts.csv", "../data/aligned_splits/split_texts.npy",
-                   finetuned=True, batch_size=16)
-    embed_sentence("../data/aligned_splits/eng_split_texts.csv", "../data/aligned_splits/eng_split_texts.npy",
-                   finetuned=True, batch_size=16)
-    embed_sentence("../data/aligned_splits/eng_and_chich_split_texts.csv", "../data/aligned_splits/eng_and_chich_split_texts.npy",
-                   finetuned=True, batch_size=16)
+    # embed_sentence("../data/train.csv", "../data/aligned_mt5_embeddings_no_dense/embeddings_chichewa.npy",
+    #                finetuned=True, load_dense_layer=False, batch_size=16)
+    # embed_sentence("../data/test.csv", "../data/aligned_mt5_embeddings_no_dense/test_embeddings_chichewa.npy",
+    #                finetuned=True, load_dense_layer=False, batch_size=16)
+    embed_sentence("../data/test.csv", "../data/aligned_mt5_embeddings/test_embeddings_chichewa.npy",
+                   finetuned=True, load_dense_layer=True, batch_size=16)
+    # embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings_no_dense/embeddings_english.npy",
+    #                finetuned=True, load_dense_layer=False, batch_size=16)
     # parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
     #                     type=str,
