@@ -11,6 +11,7 @@ import torch
 from transformers import TranslationPipeline, FeatureExtractionPipeline, MT5EncoderModel, AutoConfig
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers.pipelines.pt_utils import KeyDataset
+from transformers import TFAutoModel
 
 from models.model_mT5_contrastive import mT5Classifier
 
@@ -58,7 +59,9 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
 
 
 if __name__ == "__main__":
-    embed_sentence("../data/train.csv", "./train_emb.npy", finetuned=True, batch_size=16)
+    data_dir='./data/split_texts.csv'
+    out_dir='./data/chich_aligned_embeddings'
+    embed_sentence(data_dir,out_dir, finetuned=True, batch_size=16)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',
     #                     type=str,

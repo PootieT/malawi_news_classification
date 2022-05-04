@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 
-from models.model_base import ClassificationModel
+from model_base import ClassificationModel
 
 
 class BaselineClassifier(ClassificationModel):
