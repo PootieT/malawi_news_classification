@@ -26,7 +26,7 @@ class ClassificationModel:
     def get_metrics(self, true_labels: List[str], pred_labels: List[str]):
         true_labels = [self.idx2class[c] for c in true_labels]
         pred_labels = [self.idx2class[c] for c in pred_labels]
-        metrics = classification_report(true_labels, pred_labels, output_dict=True)
+        metrics = classification_report(true_labels, pred_labels, output_dict=True, zero_division=0)
         if self.verbose:
             pprint(metrics)
         return metrics
