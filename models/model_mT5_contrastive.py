@@ -16,7 +16,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from transformers import MT5EncoderModel, AutoConfig
 
-from models.model_base import ClassificationModel
+from model_base import ClassificationModel
 
 
 logger = logging.getLogger(__name__)

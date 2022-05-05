@@ -13,13 +13,11 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 from transformers import TFAutoModel
 
-from models.model_mT5_contrastive import mT5Classifier
+from model_mT5_contrastive import mT5Classifier
 
 
 def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_size:int=32):
-    # tokenizer = AutoTokenizer.from_pretrained("google/mt5-small", model_max_length=512)
-    # model = MT5EncoderModel.from_pretrained("google/mt5-small")
-    # pipe = FeatureExtractionPipeline(model, tokenizer=tokenizer, device=-1, batch_size=batch_size)
+
     if finetuned:
         model = mT5Classifier(load_model_path="../experiments/dump/mt5_sup_chi")
         model = model.model
@@ -49,18 +47,13 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, batch_siz
     else:
         raise NotImplementedError()
 
-    # pbar = tqdm(total=len(dataset))
-    # embeddings = np.zeros([len(dataset), model.config.hidden_size if not finetuned else 256])
-    # for i, out in enumerate(pipe(KeyDataset(dataset, "text"), **kwargs)):
-        # embeddings[i] = np.array(out[0][:512]).mean(1)
-        # pbar.update(1)
-    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cuda")
+    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cpu")
     np.save(out_path, embeddings)
 
 
 if __name__ == "__main__":
-    data_dir='/projectnb2/cs505/students/lseoane/malawi_news_classification/data/test_chich_split_texts.csv'
-    out_dir='/projectnb2/cs505/students/lseoane/malawi_news_classification/data/data/chich_unaligned_embeddings'
+    data_dir='/projectnb2/cs505/students/lseoane/malawi_news_classification/data/test_chich_splits_text.csv'
+    out_dir='/projectnb2/cs505/students/lseoane/malawi_news_classification/data/FINAL_test_chich'
     embed_sentence(data_dir,out_dir, finetuned=False, batch_size=16)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('-in_file',

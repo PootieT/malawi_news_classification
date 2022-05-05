@@ -44,8 +44,8 @@ import re
 
 
 # train_df=pd.read_csv('C:/Users/leose/homework/malawi_news_classification/data/train_google_translated.csv')
-train_df=pd.read_csv('C:/Users/leose/homework/malawi_news_classification/data/train.csv')
-
+train_df1=pd.read_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/test.csv')
+train_df2=pd.read_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/test_google_translated.csv')
 # model = MT5EncoderModel.from_pretrained("google/mt5-small")
 # tokenizer = T5Tokenizer.from_pretrained("google/mt5-small")
 
@@ -95,7 +95,7 @@ def expand_sentences(
             raise NotImplementedError()
         news_idx.extend(cur_news_idx)
     if labels is None:
-        return new_texts, new_translated_texts
+        return new_texts, new_translated_texts,news_idx
     else:
         return new_texts, new_translated_texts, new_labels, news_idx
 
@@ -138,7 +138,7 @@ def expand_mono_sentences(
             raise NotImplementedError()
         news_idx.extend(cur_news_idx)
     if labels is None:
-        return new_texts
+        return new_texts,news_idx
     else:
         return new_texts, new_labels, news_idx
 
@@ -149,19 +149,19 @@ def expand_mono_sentences(
 # input_ids = []
 
 # splits_text,splits_translated,splits_labels,split_index=expand_sentences(train_df1['Text'].tolist(),train_df2['Text'].tolist(),train_df['Label'].tolist())
-splits_text,splits_labels,split_index=expand_mono_sentences(train_df['Text'].tolist(),train_df['Label'].tolist())
+splits_text,split_index=expand_mono_sentences(train_df1['Text'].tolist())
 split_text_df=pd.DataFrame(splits_text,columns=['Text'])
-split_text_df.to_csv('./data/' + 'aligned_chich_split_texts' + '.csv')
+split_text_df.to_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/' + 'test_chich_splits_text' + '.csv')
 
-split_labels=pd.DataFrame(splits_labels,columns=['Label'])
-split_labels.to_csv('./data/' + 'aligned_chich_split_labels' + '.csv')
+# split_labels=pd.DataFrame(splits_labels,columns=['Label'])
+# split_labels.to_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/' + 'test_english_splits_labels' + '.csv')
 
 
 split_index=pd.DataFrame(split_index,columns=['Idx'])
-split_index.to_csv('./data/' + 'aligned_chich_split_index' + '.csv')
+split_index.to_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/' + 'test_chich_splits_index' + '.csv')
 
 # split_trans_df=pd.DataFrame(splits_translated,columns=['Text'])
-# split_trans_df.to_csv('C:/Users/leose/homework/malawi_news_classification/data/' + 'eng_and_chich_split_translated_text' + '.csv')
+# split_trans_df.to_csv('/projectnb2/cs505/students/lseoane/malawi_news_classification/data/' + 'test_chich_splits_text' + '.csv')
 
 
 # In[ ]:
