@@ -12,14 +12,19 @@ For any baseline models.
 ## Data Augmentation methods:
 - mixup      - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/models/mixUp.py)     
      ```bash
-        python3.9 mixUp.py
+        python3.9 mixUp.py -<train_data_dir> -<embeddings type>
      ```
+
+    - "Embeddings type" means the kind of embeddings to use when augmenting the data
+    - Mixup Augmented data will be generated in this [Location]()
+
 - NLPAug    - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/experiments/Augmention_Proof-of-Concept%20.ipynb)     
      ```bash
-        python3.9 mixUp.py
+        python3.9 <add your script bash cmd>
      ```
     
-- Manual News Scraping - [Data](http://www.ecei.tohoku.ac.jp/alg/nishizeki/sub/j/DVD/PDF_J/J053.pdf)     
+- Manual News Scraping - [Data](https://github.com/PootieT/malawi_news_classification/tree/main/data_gathering) 
+    
     
 ## For Mixup augmentation 
 -  
