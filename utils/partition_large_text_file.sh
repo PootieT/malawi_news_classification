@@ -1,12 +1,12 @@
 
 #
-# Usage: ./split_file_process_template.sh $lg_pair $num_partition
-# split the language pair .train data into multiple equal size partitions
+# Usage: ./split_file_process_template.sh input_path $num_partition
+# split the data in input path into multiple equal size partitions
 # for distributed job submission in clusters
 
 set -e
 
-input_path=$1  # input language pair
+input_path=$1  # input file path
 num_partition=$2  # number of equal size partitions to create
 
 total_lc=$(wc -l $input_path | cut -d ' ' -f1)
