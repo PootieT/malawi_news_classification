@@ -28,8 +28,8 @@ For any baseline models.
 ## For Embedding Generation
 
 ### Types of embedding methods used: 
-    - Count Vectorization
-    - TFIDF
-    - 
+- Count Vectorization
+- TFIDF
+- 
 ## For alignment of Chichewa embeddings to English 
 -  
