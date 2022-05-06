@@ -11,13 +11,13 @@ For any baseline models.
 
 ## Data Augmentation methods:
 - mixup      - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/models/mixUp.py)     
-    - ```bash
+     ```bash
         python3.9 mixUp.py
-      ```
-- NLPAug    - [Script](http://www.ecei.tohoku.ac.jp/alg/nishizeki/sub/j/DVD/PDF_J/J053.pdf)     
-    - ```bash
+     ```
+- NLPAug    - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/experiments/Augmention_Proof-of-Concept%20.ipynb)     
+     ```bash
         python3.9 mixUp.py
-      ```
+     ```
     
 - Manual News Scraping - [Data](http://www.ecei.tohoku.ac.jp/alg/nishizeki/sub/j/DVD/PDF_J/J053.pdf)     
     
