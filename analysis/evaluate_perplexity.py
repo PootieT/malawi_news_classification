@@ -75,9 +75,9 @@ def add_perplexity_to_dataset(path: str):
 
 
 if __name__ == "__main__":
-    add_perplexity_to_dataset("../data/test_webtran_translated.csv")
-    add_perplexity_to_dataset("../data/train_webtran_translated.csv")
-    add_perplexity_to_dataset("../data/test_google_translated.csv")
-    add_perplexity_to_dataset("../data/train_google_translated.csv")
-
+    # add_perplexity_to_dataset("../data/test_webtran_translated.csv")
+    # add_perplexity_to_dataset("../data/train_webtran_translated.csv")
+    # add_perplexity_to_dataset("../data/test_google_translated.csv")
+    # add_perplexity_to_dataset("../data/train_google_translated.csv")
+    add_perplexity_to_dataset("../data/train_helsinki_translated_shit.csv")
 

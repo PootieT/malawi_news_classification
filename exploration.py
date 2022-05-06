@@ -7,6 +7,5 @@ def main():
     df["Text"].apply(len).describe()
     pass
 
-
 if __name__ == "__main__":
     main()
