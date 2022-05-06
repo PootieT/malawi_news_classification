@@ -1,31 +1,46 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
-from models.model_baselines import BaselineClassifier
+import numpy as np
+from sklearn.model_selection import KFold
+import sys
+from tqdm import tqdm
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(0, '../models')
+from model_baselines import BaselineClassifier
 
 
 def train_and_evaluate(data_path: str):
     train_df = pd.read_csv(data_path)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        train_df.Text, train_df.Label, test_size=0.3, random_state=42, stratify=train_df.Label)
+    # X_train, X_test, y_train, y_test = train_test_split(
+    #     train_df.Text, train_df.Label, test_size=0.3, random_state=42, stratify=train_df.Label)
+    
+    language = "chichewa"
 
-    # test_df = pd.read_csv("../data/test.csv")
+    test_df = pd.read_csv("../data/test.csv")
+    kf = KFold(n_splits=3, random_state=42, shuffle=True)
 
-    metrics = []
+    # pbar = tqdm(total = 10)
     for vec in ["tfidf", "cv"]:
-        for m in ["NB", "LR"]:
-            model = BaselineClassifier(vec, m, verbose=False)
-            model.train_supervised(X_train, y_train)
-            metric = model.evaluate(X_test, y_test)
-            metric["vectorizer"], metric["classifier"] = vec, m
-            metrics.append(metric)
+        for m in ["MLP"]:
+            metrics = []
+            combo = []
+            for train_index, test_index in kf.split(train_df.Text):
+                X_train, X_test = train_df.iloc[train_index].Text, train_df.iloc[test_index].Text
+                y_train, y_test = train_df.iloc[train_index].Label, train_df.iloc[test_index].Label
+                combo.append(vec + "-" + m)
+                model = BaselineClassifier(vec, m, verbose=False)
+                model.train_supervised(X_train, y_train)
+                metric = model.evaluate(X_test, y_test)
+                metric["vectorizer"], metric["classifier"] = vec, m
+                metrics.append(metric)
 
-    eval_df = pd.DataFrame(metrics)
+            eval_df = pd.DataFrame(metrics)
+            eval_df.to_csv("../results/"+language+"_" + vec + "_" + m +".csv")
+            eval_df.index = combo
+            # pbar.update(1)
     return eval_df
 
 
-if __name__ == "__main__":
-    chichewa_result = train_and_evaluate(data_path="../data/train.csv")
-    english_result = train_and_evaluate(data_path="../data/train_google_translated.csv")
-    pass
+
+
