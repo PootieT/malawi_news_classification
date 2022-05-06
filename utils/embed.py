@@ -53,7 +53,8 @@ def embed_sentence(in_path: str, out_path: str, finetuned: bool=False, load_dens
     # for i, out in enumerate(pipe(KeyDataset(dataset, "text"), **kwargs)):
         # embeddings[i] = np.array(out[0][:512]).mean(1)
         # pbar.update(1)
-    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device="cpu")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    embeddings = model.encode(dataset["text"], batch_size=batch_size, show_progress_bar=True, device=device)
     np.save(out_path, embeddings)
 
 
@@ -62,8 +63,8 @@ if __name__ == "__main__":
     #                finetuned=True, load_dense_layer=False, batch_size=16)
     # embed_sentence("../data/test.csv", "../data/aligned_mt5_embeddings_no_dense/test_embeddings_chichewa.npy",
     #                finetuned=True, load_dense_layer=False, batch_size=16)
-    embed_sentence("../data/test.csv", "../data/aligned_mt5_embeddings/test_embeddings_chichewa.npy",
-                   finetuned=True, load_dense_layer=True, batch_size=16)
+    embed_sentence("../data/test_google_translated.csv", "../data/mt5_embeddings/test_embeddings_english.npy",
+                   finetuned=False, load_dense_layer=True, batch_size=16)
     # embed_sentence("../data/train_google_translated.csv", "../data/aligned_mt5_embeddings_no_dense/embeddings_english.npy",
     #                finetuned=True, load_dense_layer=False, batch_size=16)
     # parser = argparse.ArgumentParser(description='')
