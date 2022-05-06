@@ -3,12 +3,11 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sympy import GeneratorsNeeded
 from tqdm import tqdm
+import os 
+import argparse
 data_path = "../data/train.csv"
 
 
-<<<<<<< HEAD
-def mixup(text, classes, alpha=1.0):
-=======
 
 def generate_data(lambda_, c1_data, c2_data):
     generated_data = []
@@ -23,7 +22,6 @@ def generate_data(lambda_, c1_data, c2_data):
     return generated_data
 
 def mixup(text, classes, idx2class ,alpha=1.0):
->>>>>>> dc25bb0 (run this for embeddings)
     """
     Randomly mixes the given list of text embeddings with each other
     
@@ -96,9 +94,15 @@ def mixup(text, classes, idx2class ,alpha=1.0):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("data_dir", type=str, help="directory to load data from")
+    parser.add_argument("embeddings", type=str, help="file name of the generated embeddings")
+    args = parser.parse_args()
+        
 
     train_df = pd.read_csv(data_path)
     vectorizer = CountVectorizer(max_features=512)
+    embeddings_path = os.path.join("../data/", args.embeddings + ".npy")
 
 
     text, labels = train_df.Text, list(train_df.Label)
@@ -107,7 +111,7 @@ if __name__ == "__main__":
     labels = [class2idx[c] for c in labels]
 
     # mtf_embeddings = np.load("../data/embeddings_chichewa.npy")
-    mtf_small_embeddings = np.load("../data/embeddings_english_512_final.npy")
+    mtf_small_embeddings = np.load(embeddings_path)
     text_embeddings = vectorizer.fit_transform(text).toarray()
     # mixedup_text, mixedup_labels = mixup(text, labels)
     mixup(mtf_small_embeddings,labels, idx2class)
