@@ -21,8 +21,8 @@ def train_and_evaluate(data_path: str):
     kf = KFold(n_splits=3, random_state=42, shuffle=True)
 
     # pbar = tqdm(total = 10)
-    for vec in ["tfidf", "cv"]:
-        for m in ["MLP"]:
+    for vec in ["tfidf", "cv", "MT5", "Constrastive"]:
+        for m in ["MLP", "SVM", "XGB", "RF", "LR"]:
             metrics = []
             combo = []
             for train_index, test_index in kf.split(train_df.Text):
