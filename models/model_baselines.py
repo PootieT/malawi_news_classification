@@ -13,7 +13,7 @@ import xgboost as xgb
 from read_data import get_data
 
 custom_embeddings = ["MT5", "Contrastive"]
-        
+
 class BaselineClassifier(ClassificationModel):
     """
     baseline classification pipeline that tokenizes text using basic vectorizer
@@ -28,9 +28,9 @@ class BaselineClassifier(ClassificationModel):
         verbose: bool=True
     ):
         super(BaselineClassifier, self).__init__(verbose)
-        
+
         assert vectorizer in ["tfidf", "cv", "MT5", "Contrastive"]
-        
+
         self.vectorizer_custom = False
 
         if vectorizer not in custom_embeddings:
@@ -45,14 +45,14 @@ class BaselineClassifier(ClassificationModel):
             print("this happened")
             self.vectorizer_custom = True
             self.custom_vectorizer_type = vectorizer
-            
+
         assert classifier in ["NB", "LR", "RF", "XGB", "MLP"]
-        
+
 
         # Classifier part
         self.classifier = {
             "NB": GaussianNB,
-            "LR": LogisticRegression, 
+            "LR": LogisticRegression,
             "MLP": NeuralNetwork,       # Need to add training loop
             "RF": RandomForestClassifier,
             "XGB": xgb.XGBClassifier
@@ -72,7 +72,7 @@ class BaselineClassifier(ClassificationModel):
     ):
         if self.vectorizer_custom == False: # for tfidf, cv
             features = self.vectorizer.fit_transform(train_data).toarray()
-        
+
         else: # for MT5, contrastive
             # embeddings = get_data(self.custom_vectorizer_type)
             features = train_emb[train_data.index]
@@ -83,8 +83,8 @@ class BaselineClassifier(ClassificationModel):
 
     def evaluate(self, test_data: List[str], test_labels: List[str], train_emb: Optional[np.array]):
         """
-        :param test_data: 
-        :param test_labels:         
+        :param test_data:
+        :param test_labels:
         """
 
         if self.vectorizer_custom == False:
