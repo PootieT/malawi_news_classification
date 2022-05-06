@@ -19,8 +19,8 @@ For Classification Results from all the models:
         python3.9 experiments/main.py -<data_dir> -<embedding_file>
      ```
 
-    data_dir : Directory where the training data is located (Text)
-    embedding_file : Name of the embedding file 
+data_dir : Directory where the training data is located (Text)
+embedding_file : Name of the embedding file 
 
 
 
