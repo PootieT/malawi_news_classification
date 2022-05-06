@@ -30,6 +30,9 @@ For any baseline models.
 ### Types of embedding methods used: 
 - Count Vectorization
 - TFIDF
-- 
-## For alignment of Chichewa embeddings to English 
--  
+- English aligned Chichewa MT5 embeddings     - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/experiments/train_mt5_contrastive.py)
+```bash
+python3.9 train_mt5_contrastive.py
+```
+
+
