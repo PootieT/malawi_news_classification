@@ -19,10 +19,9 @@ For any baseline models.
     - Mixup Augmented data will be generated in this [Location]()
 
 - **NLPAug**    - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/experiments/Augmention_Proof-of-Concept%20.ipynb)     
-     ```bash
-        python3.9 <add your script bash cmd>
-     ```
-    
+
+    - [NLPAug Description](https://nlpaug.readthedocs.io/en/latest/) 
+ 
 - **Manual News Scraping** - [Data](https://github.com/PootieT/malawi_news_classification/tree/main/data_gathering) 
     
 ## For Embedding Generation
