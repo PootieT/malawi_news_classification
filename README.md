@@ -8,6 +8,24 @@ with Transformer-based models, as well as some data science techniques to boost 
 
 ## Baseline models:
 For any baseline models.
+- Support Vector Machines
+- Random Forests
+- XGBoost 
+- Multi-layer Perceptron
+- Logistic Regression
+
+For Classification Results from all the models:
+```bash
+    python3.9 experiments/main.py -<data_dir> -<embedding_file>
+```
+
+    - data_dir : Directory where the training data is located (Text)
+    - embedding_file : Name of the embedding file 
+
+
+
+- The results will be generated as a csv file in this [location](Results)
+    
 
 ## Data Augmentation methods:
 - **Mixup**      - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/models/mixUp.py)     
