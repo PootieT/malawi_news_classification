@@ -24,8 +24,6 @@ For any baseline models.
  
 - **Manual News Scraping** - [Data](https://github.com/PootieT/malawi_news_classification/tree/main/data_gathering) 
     
-## For Embedding Generation
-
 ### Types of embedding methods used: 
 - Count Vectorization
 - TFIDF
