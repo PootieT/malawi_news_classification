@@ -246,7 +246,8 @@ class mT5Classifier(ClassificationModel):
         save_path: str="dump/mt5_classifier",
         training_args: Optional[Dict[str, Any]]=None,
         verbose: bool=False,
-        load_model_path: Optional[str]=None
+        load_model_path: Optional[str]=None,
+        load_dense_layer: bool=True
     ):
         super(mT5Classifier, self).__init__(verbose)
         model_name = "google/mt5-small"
@@ -261,10 +262,14 @@ class mT5Classifier(ClassificationModel):
                                    activation_function=nn.Tanh())
 
         if load_model_path is not None:
-            base_model.auto_model.load_state_dict(torch.load(f"{load_model_path}/pytorch_model.bin"))
-            dense_model.load_state_dict(torch.load(f"{load_model_path}/2_Dense/pytorch_model.bin"))
+            base_model.auto_model.load_state_dict(torch.load(f"{load_model_path}/pytorch_model.bin", map_location=torch.device('cpu')))
+            if load_dense_layer:
+                dense_model.load_state_dict(torch.load(f"{load_model_path}/2_Dense/pytorch_model.bin", map_location=torch.device('cpu')))
 
-        self.model = SentenceTransformer(modules=[base_model, pooling_model, dense_model])
+        if load_dense_layer:
+            self.model = SentenceTransformer(modules=[base_model, pooling_model, dense_model])
+        else:
+            self.model = SentenceTransformer(modules=[base_model, pooling_model])
         self.model.max_seq_length = 512
         self.train_loss_supervised = SupervisedLoss(model=self.model,
                                                     sentence_embedding_dimension=self.model.get_sentence_embedding_dimension(),

@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Tuple, Any
 
-
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
@@ -64,19 +64,24 @@ class BaselineClassifier(ClassificationModel):
 
 
 
-    def train_supervised(self, train_data: List[str], train_labels: List[str]):
+    def train_supervised(
+        self,
+        train_data: List[str],
+        train_labels: List[str],
+        train_emb: Optional[np.array]
+    ):
         if self.vectorizer_custom == False: # for tfidf, cv
             features = self.vectorizer.fit_transform(train_data).toarray()
 
         else: # for MT5, contrastive
-            embeddings = get_data(self.custom_vectorizer_type)
-            features = embeddings[train_data.index]
+            # embeddings = get_data(self.custom_vectorizer_type)
+            features = train_emb[train_data.index]
 
         labels = [self.class2idx[c] for c in train_labels]
         self.classifier.fit(features, labels)
 
 
-    def evaluate(self, test_data: List[str], test_labels: List[str]):
+    def evaluate(self, test_data: List[str], test_labels: List[str], train_emb: Optional[np.array]):
         """
         :param test_data:
         :param test_labels:
@@ -85,11 +90,18 @@ class BaselineClassifier(ClassificationModel):
         if self.vectorizer_custom == False:
             features = self.vectorizer.transform(test_data).toarray()
         else:
-            embeddings = get_data(self.custom_vectorizer_type)
-            features = embeddings[test_data.index]
+            # embeddings = get_data(self.custom_vectorizer_type)
+            features = train_emb[test_data.index]
 
         labels = [self.class2idx[c] for c in test_labels]
         pred = self.classifier.predict(features)
         metrics = super().get_metrics(labels, pred)
         return metrics
 
+    def predict(self, test_data: List[str], test_emb: Optional[np.array]=None):
+        if self.vectorizer_custom == False:
+            features = self.vectorizer.transform(test_data).toarray()
+        else:
+            features = test_emb
+        pred = self.classifier.predict(features)
+        return [self.idx2class[p] for p in pred]
