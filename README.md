@@ -24,7 +24,7 @@ For any baseline models.
  
 - **Manual News Scraping** - [Data](https://github.com/PootieT/malawi_news_classification/tree/main/data_gathering) 
     
-### Types of embedding methods used: 
+## Types of embedding methods used: 
 - Count Vectorization
 - TFIDF
 - English aligned Chichewa MT5 embeddings     - [Script](https://github.com/PootieT/malawi_news_classification/blob/main/experiments/train_mt5_contrastive.py)
