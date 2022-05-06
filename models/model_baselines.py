@@ -68,7 +68,7 @@ class BaselineClassifier(ClassificationModel):
         self,
         train_data: List[str],
         train_labels: List[str],
-        train_emb: Optional[np.array]
+        train_emb: Optional[np.array] = None
     ):
         if self.vectorizer_custom == False: # for tfidf, cv
             features = self.vectorizer.fit_transform(train_data).toarray()
