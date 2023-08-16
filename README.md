@@ -1,10 +1,12 @@
-# malawi_news_classification
+![image](https://github.com/PootieT/malawi_news_classification/assets/22847669/0e484b40-19ef-4a6f-8bf5-066cded89595)# malawi_news_classification
 Low resource text classification
 
 Welcome to the repo for final class project for CS 505 (NLP). In this project
 we are tasked with this [Malawi News Classification dataset](https://zindi.africa/competitions/ai4d-malawi-news-classification-challenge/leaderboard).
 In limited time span, we tested a few techniques in data augmentation, creating / finetuning better embedding space
 with Transformer-based models, as well as some data science techniques to boost performance in feature space.
+
+See project presentation [here](https://docs.google.com/presentation/d/16EyfBhN2qr21I04OFhtKC4XhPVQ316cK9kIXiFyZA_8/edit?usp=drive_link)
 
 ## Baseline models:
 For any baseline models.
