@@ -1,4 +1,4 @@
-![image](https://github.com/PootieT/malawi_news_classification/assets/22847669/0e484b40-19ef-4a6f-8bf5-066cded89595)# malawi_news_classification
+# malawi_news_classification
 Low resource text classification
 
 Welcome to the repo for final class project for CS 505 (NLP). In this project
